@@ -168,26 +168,28 @@ export default function App() {
                 🗓️ Calendar View
               </button>
             </div>
-            <button 
-              className="tasks-icon-btn"
-              onClick={() => setIsTasksPanelOpen(true)}
-              title="View All Tasks"
-            >
-              📋
-            </button>
+            <div className="header-controls">
+              {activeTab === 'schedule' && (
+                <input 
+                  type="date" 
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="date-input-header"
+                />
+              )}
+              <button 
+                className="tasks-icon-btn"
+                onClick={() => setIsTasksPanelOpen(true)}
+                title="View All Tasks"
+              >
+                📋
+              </button>
+            </div>
           </div>
 
           <div className="tab-content">
             {activeTab === 'schedule' && (
               <div className="schedule-view">
-                <div className="date-selector">
-                  <input 
-                    type="date" 
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="date-input"
-                  />
-                </div>
                 <div className="schedule-tasks">
                   {getTasksForDate(selectedDate).length === 0 ? (
                     <div className="no-tasks">
