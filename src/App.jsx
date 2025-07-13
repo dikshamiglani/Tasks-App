@@ -1,5 +1,9 @@
+
 import React, { useState, useEffect } from 'react'
 import './App.css'
+import AuthModal from './AuthModal'
+import authService from './authService'
+import notificationService from './notificationService'
 
 export default function App() {
   const [tasks, setTasks] = useState([])
@@ -11,22 +15,34 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
   const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(false)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
 
-  // Load tasks from localStorage on component mount
+  // Check authentication status on component mount
   useEffect(() => {
-    const savedTasks = localStorage.getItem('todoTasks')
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks))
+    const user = authService.getCurrentUser()
+    setCurrentUser(user)
+    
+    if (user) {
+      // Load user-specific tasks
+      const userTasks = localStorage.getItem(`todoTasks_${user.id}`)
+      if (userTasks) {
+        setTasks(JSON.parse(userTasks))
+      }
     }
   }, [])
 
-  // Save tasks to localStorage whenever tasks change
+  // Save tasks to user-specific localStorage whenever tasks change
   useEffect(() => {
-    localStorage.setItem('todoTasks', JSON.stringify(tasks))
-  }, [tasks])
+    if (currentUser) {
+      localStorage.setItem(`todoTasks_${currentUser.id}`, JSON.stringify(tasks))
+    }
+  }, [tasks, currentUser])
 
-  // Check for reminders
+  // Enhanced reminder checking with notifications
   useEffect(() => {
+    if (!currentUser) return
+
     const checkReminders = () => {
       const now = new Date()
       const currentTime = now.getHours() * 60 + now.getMinutes()
@@ -41,14 +57,14 @@ export default function App() {
             const lastShownDate = task.lastReminderShown ? new Date(task.lastReminderShown).toDateString() : null
 
             if (currentTime >= reminderMinutes && lastShownDate !== currentDateString) {
-              alert(`Daily Reminder: ${task.text}`)
+              notificationService.showTaskReminder(task.text)
               setTasks(prev => prev.map(t => 
                 t.id === task.id ? { ...t, lastReminderShown: now.toISOString() } : t
               ))
             }
           } else {
             if (now >= reminderTime && !task.reminderShown) {
-              alert(`Reminder: ${task.text}`)
+              notificationService.showTaskReminder(task.text)
               setTasks(prev => prev.map(t => 
                 t.id === task.id ? { ...t, reminderShown: true } : t
               ))
@@ -60,7 +76,24 @@ export default function App() {
 
     const interval = setInterval(checkReminders, 60000)
     return () => clearInterval(interval)
-  }, [tasks])
+  }, [tasks, currentUser])
+
+  const handleAuthSuccess = (user) => {
+    setCurrentUser(user)
+    // Load user-specific tasks
+    const userTasks = localStorage.getItem(`todoTasks_${user.id}`)
+    if (userTasks) {
+      setTasks(JSON.parse(userTasks))
+    } else {
+      setTasks([])
+    }
+  }
+
+  const handleLogout = () => {
+    authService.logout()
+    setCurrentUser(null)
+    setTasks([])
+  }
 
   const addTask = () => {
     if (newTask.trim()) {
@@ -82,7 +115,8 @@ export default function App() {
         reminderShown: false,
         lastReminderShown: null,
         createdAt: new Date().toISOString(),
-        category: category
+        category: category,
+        userId: currentUser.id
       }
       setTasks([...tasks, task])
       setNewTask('')
@@ -138,16 +172,51 @@ export default function App() {
     return date.toLocaleString()
   }
 
+  // Show auth modal if not authenticated
+  if (!currentUser) {
+    return (
+      <div className="app">
+        <div className="auth-landing">
+          <div className="auth-landing-content">
+            <h1 className="title">✨ My To-Do List ✨</h1>
+            <p className="subtitle">Organize your tasks with smart reminders</p>
+            <button 
+              className="auth-landing-btn" 
+              onClick={() => setIsAuthModalOpen(true)}
+            >
+              Get Started
+            </button>
+          </div>
+        </div>
+        
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <div className="app-header">
         <h1 className="title">✨ My To-Do List ✨</h1>
-        <button 
-          className="add-task-btn" 
-          onClick={() => setIsAddTaskModalOpen(true)}
-        >
-          + Add New Task
-        </button>
+        <div className="header-actions">
+          <span className="user-greeting">Hello, {currentUser.name}!</span>
+          <button 
+            className="add-task-btn" 
+            onClick={() => setIsAddTaskModalOpen(true)}
+          >
+            + Add New Task
+          </button>
+          <button 
+            className="logout-btn" 
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="main-content">
@@ -338,6 +407,13 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   )
 }
