@@ -7,6 +7,7 @@ export default function App() {
   const [newTask, setNewTask] = useState('')
   const [newCategory, setNewCategory] = useState('Personal')
   const [newReminder, setNewReminder] = useState('')
+  const [newReminderType, setNewReminderType] = useState('once')
   const [editingTask, setEditingTask] = useState(null)
   const [filter, setFilter] = useState('All')
 
@@ -29,14 +30,32 @@ export default function App() {
   useEffect(() => {
     const checkReminders = () => {
       const now = new Date()
+      const currentTime = now.getHours() * 60 + now.getMinutes()
+      const currentDateString = now.toDateString()
+      
       tasks.forEach(task => {
-        if (task.reminder && !task.reminderShown) {
+        if (task.reminder) {
           const reminderTime = new Date(task.reminder)
-          if (now >= reminderTime) {
-            alert(`Reminder: ${task.text}`)
-            setTasks(prev => prev.map(t => 
-              t.id === task.id ? { ...t, reminderShown: true } : t
-            ))
+          const reminderMinutes = reminderTime.getHours() * 60 + reminderTime.getMinutes()
+          
+          if (task.reminderType === 'daily') {
+            // For daily reminders, check if it's time and hasn't been shown today
+            const lastShownDate = task.lastReminderShown ? new Date(task.lastReminderShown).toDateString() : null
+            
+            if (currentTime >= reminderMinutes && lastShownDate !== currentDateString) {
+              alert(`Daily Reminder: ${task.text}`)
+              setTasks(prev => prev.map(t => 
+                t.id === task.id ? { ...t, lastReminderShown: now.toISOString() } : t
+              ))
+            }
+          } else {
+            // For one-time reminders
+            if (now >= reminderTime && !task.reminderShown) {
+              alert(`Reminder: ${task.text}`)
+              setTasks(prev => prev.map(t => 
+                t.id === task.id ? { ...t, reminderShown: true } : t
+              ))
+            }
           }
         }
       })
@@ -54,12 +73,15 @@ export default function App() {
         completed: false,
         category: newCategory,
         reminder: newReminder || null,
+        reminderType: newReminderType,
         reminderShown: false,
+        lastReminderShown: null,
         createdAt: new Date().toISOString()
       }
       setTasks([...tasks, task])
       setNewTask('')
       setNewReminder('')
+      setNewReminderType('once')
     }
   }
 
@@ -135,6 +157,16 @@ export default function App() {
             title="Set reminder"
           />
           
+          <select
+            value={newReminderType}
+            onChange={(e) => setNewReminderType(e.target.value)}
+            className="reminder-type-select"
+            title="Reminder frequency"
+          >
+            <option value="once">Once</option>
+            <option value="daily">Daily</option>
+          </select>
+          
           <button onClick={addTask} className="add-btn">Add Task</button>
         </div>
 
@@ -178,6 +210,14 @@ export default function App() {
                     onChange={(e) => setEditingTask({...editingTask, reminder: e.target.value})}
                     className="edit-reminder"
                   />
+                  <select
+                    value={editingTask.reminderType || 'once'}
+                    onChange={(e) => setEditingTask({...editingTask, reminderType: e.target.value})}
+                    className="edit-reminder-type"
+                  >
+                    <option value="once">Once</option>
+                    <option value="daily">Daily</option>
+                  </select>
                   <div className="edit-actions">
                     <button onClick={saveEdit} className="save-btn">Save</button>
                     <button onClick={cancelEdit} className="cancel-btn">Cancel</button>
@@ -199,7 +239,8 @@ export default function App() {
                       </span>
                       {task.reminder && (
                         <span className="reminder-info">
-                          🔔 {formatDateTime(task.reminder)}
+                          🔔 {formatDateTime(task.reminder)} 
+                          {task.reminderType === 'daily' && <span className="daily-badge">Daily</span>}
                         </span>
                       )}
                     </div>
