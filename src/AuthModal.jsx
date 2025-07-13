@@ -6,9 +6,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [isLogin, setIsLogin] = useState(true)
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    name: '',
-    confirmPassword: ''
+    password: ''
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -31,10 +29,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         const user = authService.login(formData.email, formData.password)
         onAuthSuccess(user)
       } else {
-        if (formData.password !== formData.confirmPassword) {
-          throw new Error('Passwords do not match')
-        }
-        const user = authService.register(formData.email, formData.password, formData.name)
+        const user = authService.register(formData.email, formData.password, formData.email.split('@')[0])
         onAuthSuccess(user)
       }
       onClose()
@@ -50,9 +45,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setError('')
     setFormData({
       email: '',
-      password: '',
-      name: '',
-      confirmPassword: ''
+      password: ''
     })
   }
 
@@ -67,18 +60,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         </div>
         
         <form onSubmit={handleSubmit} className="auth-form">
-          {!isLogin && (
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-              className="auth-input"
-            />
-          )}
-          
           <input
             type="email"
             name="email"
@@ -98,18 +79,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             required
             className="auth-input"
           />
-          
-          {!isLogin && (
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChange={handleInputChange}
-              required
-              className="auth-input"
-            />
-          )}
           
           {error && <div className="auth-error">{error}</div>}
           
