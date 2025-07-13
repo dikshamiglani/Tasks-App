@@ -17,6 +17,7 @@ export default function App() {
   const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(false)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
 
   // Check authentication status on component mount
   useEffect(() => {
@@ -38,6 +39,20 @@ export default function App() {
       localStorage.setItem(`todoTasks_${currentUser.id}`, JSON.stringify(tasks))
     }
   }, [tasks, currentUser])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileDropdown && !event.target.closest('.profile-dropdown')) {
+        setShowProfileDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showProfileDropdown])
 
   // Enhanced reminder checking with notifications
   useEffect(() => {
@@ -210,12 +225,27 @@ export default function App() {
           >
             + Add New Task
           </button>
-          <button 
-            className="logout-btn" 
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
+          <div className="profile-dropdown">
+            <button 
+              className="profile-icon"
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            >
+              👤
+            </button>
+            {showProfileDropdown && (
+              <div className="dropdown-menu">
+                <button 
+                  className="dropdown-item"
+                  onClick={() => {
+                    setShowProfileDropdown(false)
+                    handleLogout()
+                  }}
+                >
+                  🚪 Logout
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
