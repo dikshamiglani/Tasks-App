@@ -10,6 +10,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('schedule')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
+  const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(false)
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
@@ -63,6 +64,15 @@ export default function App() {
 
   const addTask = () => {
     if (newTask.trim()) {
+      // Simple category assignment based on keywords
+      let category = 'Personal'
+      const taskLower = newTask.toLowerCase()
+      if (taskLower.includes('work') || taskLower.includes('meeting') || taskLower.includes('office') || taskLower.includes('project')) {
+        category = 'Work'
+      } else if (taskLower.includes('exercise') || taskLower.includes('doctor') || taskLower.includes('health') || taskLower.includes('gym')) {
+        category = 'Health'
+      }
+
       const task = {
         id: Date.now(),
         text: newTask,
@@ -71,7 +81,8 @@ export default function App() {
         reminderType: newReminderType,
         reminderShown: false,
         lastReminderShown: null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        category: category
       }
       setTasks([...tasks, task])
       setNewTask('')
@@ -142,18 +153,27 @@ export default function App() {
       <div className="main-content">
         {/* Main Schedule Interface */}
         <div className="schedule-panel">
-          <div className="tab-container">
+          <div className="panel-header">
+            <div className="tab-container">
+              <button 
+                className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
+                onClick={() => setActiveTab('schedule')}
+              >
+                📅 Today's Schedule
+              </button>
+              <button 
+                className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
+                onClick={() => setActiveTab('calendar')}
+              >
+                🗓️ Calendar View
+              </button>
+            </div>
             <button 
-              className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
-              onClick={() => setActiveTab('schedule')}
+              className="tasks-icon-btn"
+              onClick={() => setIsTasksPanelOpen(true)}
+              title="View All Tasks"
             >
-              📅 Today's Schedule
-            </button>
-            <button 
-              className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
-              onClick={() => setActiveTab('calendar')}
-            >
-              🗓️ Calendar View
+              📋
             </button>
           </div>
 
@@ -212,9 +232,61 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Side - Category Buttons */}
-
-        {/* Category Tasks Panel */}
+        {/* Tasks Panel */}
+        {isTasksPanelOpen && (
+          <div className="tasks-panel-overlay" onClick={() => setIsTasksPanelOpen(false)}>
+            <div className="tasks-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="tasks-panel-header">
+                <h3>All Tasks</h3>
+                <button 
+                  className="close-panel-btn"
+                  onClick={() => setIsTasksPanelOpen(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="tasks-panel-content">
+                {tasks.length === 0 ? (
+                  <div className="no-tasks-panel">
+                    <p>No tasks created yet</p>
+                    <p>Add your first task to get started!</p>
+                  </div>
+                ) : (
+                  <div className="tasks-list">
+                    {['Personal', 'Work', 'Health'].map(category => {
+                      const categoryTasks = tasks.filter(task => task.category === category)
+                      if (categoryTasks.length === 0) return null
+                      
+                      return (
+                        <div key={category} className="category-section">
+                          <h4 className={`category-header ${category.toLowerCase()}`}>{category}</h4>
+                          {categoryTasks.map(task => (
+                            <div key={task.id} className={`panel-task ${task.completed ? 'completed' : ''}`}>
+                              <div className="panel-task-info">
+                                <span className="panel-task-text">{task.text}</span>
+                                {task.reminder && (
+                                  <span className="panel-task-reminder">
+                                    📅 {formatDateTime(task.reminder)}
+                                  </span>
+                                )}
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={task.completed}
+                                onChange={() => toggleTask(task.id)}
+                                className="panel-task-checkbox"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
