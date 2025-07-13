@@ -85,32 +85,6 @@ body {
   margin-bottom: 25px;
 }
 
-.header-controls {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  margin-right: 60px;
-}
-
-.date-input-header {
-  padding: 8px 12px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: linear-gradient(white, white) padding-box,
-              linear-gradient(45deg, #667eea, #764ba2) border-box;
-  font-size: 14px;
-  outline: none;
-  transition: all 0.3s ease;
-  width: 100%;
-  max-width: 200px;
-}
-
-.tasks-icon-fixed {
-  position: absolute;
-  right: 25px;
-  top: 25px;
-}
-
 .tab-container {
   display: flex;
   gap: 10px;
