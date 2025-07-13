@@ -11,9 +11,9 @@ export default function App() {
   const [editingTask, setEditingTask] = useState(null)
   const [activeTab, setActiveTab] = useState('schedule')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(true)
+  const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false)
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
-  const [taskFilter, setTaskFilter] = useState('All')
+  const [selectedCategory, setSelectedCategory] = useState('Personal')
 
   const categories = ['Personal', 'Work', 'Health', 'Other']
 
@@ -122,13 +122,8 @@ export default function App() {
     })
   }
 
-  const getFilteredTasks = () => {
-    return tasks.filter(task => {
-      if (taskFilter === 'All') return true
-      if (taskFilter === 'Completed') return task.completed
-      if (taskFilter === 'Pending') return !task.completed
-      return task.category === taskFilter
-    })
+  const getTasksByCategory = (category) => {
+    return tasks.filter(task => task.category === category)
   }
 
   const formatTime = (dateTimeString) => {
@@ -156,20 +151,20 @@ export default function App() {
       </div>
 
       <div className="main-content">
-        {/* Left Side - Tabs */}
-        <div className="left-panel">
+        {/* Main Schedule Interface */}
+        <div className="schedule-panel">
           <div className="tab-container">
             <button 
               className={`tab ${activeTab === 'schedule' ? 'active' : ''}`}
               onClick={() => setActiveTab('schedule')}
             >
-              📅 Schedule
+              📅 Today's Schedule
             </button>
             <button 
               className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
               onClick={() => setActiveTab('calendar')}
             >
-              🗓️ Calendar
+              🗓️ Calendar View
             </button>
           </div>
 
@@ -188,9 +183,12 @@ export default function App() {
                   {getTasksForDate(selectedDate).length === 0 ? (
                     <div className="no-tasks">
                       <p>No tasks scheduled for this date</p>
+                      <p>Add a task with a reminder to see it here!</p>
                     </div>
                   ) : (
-                    getTasksForDate(selectedDate).map(task => (
+                    getTasksForDate(selectedDate)
+                      .sort((a, b) => new Date(a.reminder) - new Date(b.reminder))
+                      .map(task => (
                       <div key={task.id} className={`schedule-task ${task.completed ? 'completed' : ''}`}>
                         <div className="task-time">{formatTime(task.reminder)}</div>
                         <div className="task-info">
@@ -218,7 +216,6 @@ export default function App() {
                   <h3>Task Calendar</h3>
                 </div>
                 <div className="calendar-grid">
-                  {/* Simple calendar implementation */}
                   <div className="calendar-placeholder">
                     <p>Calendar view coming soon...</p>
                     <p>For now, use the date selector in Schedule tab</p>
@@ -229,96 +226,114 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Side - Collapsible Task Panel */}
-        <div className={`right-panel ${isTaskPanelOpen ? 'open' : 'closed'}`}>
-          <div className="panel-header">
-            <h3>All Tasks</h3>
-            <button 
-              className="collapse-btn"
-              onClick={() => setIsTaskPanelOpen(!isTaskPanelOpen)}
-            >
-              {isTaskPanelOpen ? '→' : '←'}
-            </button>
+        {/* Right Side - Category Buttons */}
+        <div className="category-sidebar">
+          <div className="category-buttons">
+            {categories.map(category => (
+              <button
+                key={category}
+                className={`category-btn ${category.toLowerCase()}`}
+                onClick={() => {
+                  setSelectedCategory(category)
+                  setIsCategoryPanelOpen(true)
+                }}
+              >
+                <span className="category-icon">
+                  {category === 'Personal' && '👤'}
+                  {category === 'Work' && '💼'}
+                  {category === 'Health' && '💪'}
+                  {category === 'Other' && '📋'}
+                </span>
+                <span className="category-name">{category}</span>
+                <span className="task-count">{getTasksByCategory(category).length}</span>
+              </button>
+            ))}
           </div>
+        </div>
 
-          {isTaskPanelOpen && (
-            <div className="panel-content">
-              <div className="task-filters">
-                {['All', 'Pending', 'Completed', ...categories].map(filter => (
-                  <button
-                    key={filter}
-                    onClick={() => setTaskFilter(filter)}
-                    className={`filter-btn ${taskFilter === filter ? 'active' : ''}`}
-                  >
-                    {filter}
-                  </button>
-                ))}
+        {/* Category Tasks Panel */}
+        {isCategoryPanelOpen && (
+          <div className="category-panel-overlay" onClick={() => setIsCategoryPanelOpen(false)}>
+            <div className="category-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="panel-header">
+                <h3>{selectedCategory} Tasks</h3>
+                <button 
+                  className="close-btn"
+                  onClick={() => setIsCategoryPanelOpen(false)}
+                >
+                  ×
+                </button>
               </div>
-
-              <div className="task-list">
-                {getFilteredTasks().map(task => (
-                  <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
-                    {editingTask && editingTask.id === task.id ? (
-                      <div className="edit-form">
-                        <input
-                          type="text"
-                          value={editingTask.text}
-                          onChange={(e) => setEditingTask({...editingTask, text: e.target.value})}
-                          className="edit-input"
-                        />
-                        <select
-                          value={editingTask.category}
-                          onChange={(e) => setEditingTask({...editingTask, category: e.target.value})}
-                          className="edit-category"
-                        >
-                          {categories.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
-                        <input
-                          type="datetime-local"
-                          value={editingTask.reminder || ''}
-                          onChange={(e) => setEditingTask({...editingTask, reminder: e.target.value})}
-                          className="edit-reminder"
-                        />
-                        <div className="edit-actions">
-                          <button onClick={saveEdit} className="save-btn">Save</button>
-                          <button onClick={cancelEdit} className="cancel-btn">Cancel</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="task-content">
-                        <input
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => toggleTask(task.id)}
-                          className="task-checkbox"
-                        />
-                        <div className="task-details">
-                          <span className="task-text">{task.text}</span>
-                          <div className="task-meta">
-                            <span className={`category-tag ${task.category.toLowerCase()}`}>
-                              {task.category}
-                            </span>
-                            {task.reminder && (
-                              <span className="reminder-info">
-                                🔔 {formatDateTime(task.reminder)}
-                              </span>
-                            )}
+              
+              <div className="panel-content">
+                <div className="task-list">
+                  {getTasksByCategory(selectedCategory).length === 0 ? (
+                    <div className="no-tasks">
+                      <p>No {selectedCategory.toLowerCase()} tasks yet</p>
+                    </div>
+                  ) : (
+                    getTasksByCategory(selectedCategory).map(task => (
+                      <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
+                        {editingTask && editingTask.id === task.id ? (
+                          <div className="edit-form">
+                            <input
+                              type="text"
+                              value={editingTask.text}
+                              onChange={(e) => setEditingTask({...editingTask, text: e.target.value})}
+                              className="edit-input"
+                            />
+                            <select
+                              value={editingTask.category}
+                              onChange={(e) => setEditingTask({...editingTask, category: e.target.value})}
+                              className="edit-category"
+                            >
+                              {categories.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="datetime-local"
+                              value={editingTask.reminder || ''}
+                              onChange={(e) => setEditingTask({...editingTask, reminder: e.target.value})}
+                              className="edit-reminder"
+                            />
+                            <div className="edit-actions">
+                              <button onClick={saveEdit} className="save-btn">Save</button>
+                              <button onClick={cancelEdit} className="cancel-btn">Cancel</button>
+                            </div>
                           </div>
-                        </div>
-                        <div className="task-actions">
-                          <button onClick={() => startEditing(task)} className="edit-btn">Edit</button>
-                          <button onClick={() => deleteTask(task.id)} className="delete-btn">Delete</button>
-                        </div>
+                        ) : (
+                          <div className="task-content">
+                            <input
+                              type="checkbox"
+                              checked={task.completed}
+                              onChange={() => toggleTask(task.id)}
+                              className="task-checkbox"
+                            />
+                            <div className="task-details">
+                              <span className="task-text">{task.text}</span>
+                              <div className="task-meta">
+                                {task.reminder && (
+                                  <span className="reminder-info">
+                                    🔔 {formatDateTime(task.reminder)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="task-actions">
+                              <button onClick={() => startEditing(task)} className="edit-btn">Edit</button>
+                              <button onClick={() => deleteTask(task.id)} className="delete-btn">Delete</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    ))
+                  )}
+                </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Add Task Modal */}
