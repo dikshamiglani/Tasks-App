@@ -1,21 +1,15 @@
-
 import React, { useState, useEffect } from 'react'
 import './App.css'
 
 export default function App() {
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
-  const [newCategory, setNewCategory] = useState('Personal')
   const [newReminder, setNewReminder] = useState('')
   const [newReminderType, setNewReminderType] = useState('once')
   const [editingTask, setEditingTask] = useState(null)
   const [activeTab, setActiveTab] = useState('schedule')
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
-  const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false)
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState('Personal')
-
-  const categories = ['Personal', 'Work', 'Health', 'Other']
 
   // Load tasks from localStorage on component mount
   useEffect(() => {
@@ -36,15 +30,15 @@ export default function App() {
       const now = new Date()
       const currentTime = now.getHours() * 60 + now.getMinutes()
       const currentDateString = now.toDateString()
-      
+
       tasks.forEach(task => {
         if (task.reminder) {
           const reminderTime = new Date(task.reminder)
           const reminderMinutes = reminderTime.getHours() * 60 + reminderTime.getMinutes()
-          
+
           if (task.reminderType === 'daily') {
             const lastShownDate = task.lastReminderShown ? new Date(task.lastReminderShown).toDateString() : null
-            
+
             if (currentTime >= reminderMinutes && lastShownDate !== currentDateString) {
               alert(`Daily Reminder: ${task.text}`)
               setTasks(prev => prev.map(t => 
@@ -73,7 +67,6 @@ export default function App() {
         id: Date.now(),
         text: newTask,
         completed: false,
-        category: newCategory,
         reminder: newReminder || null,
         reminderType: newReminderType,
         reminderShown: false,
@@ -120,10 +113,6 @@ export default function App() {
       const selectedDateObj = new Date(date).toDateString()
       return taskDate === selectedDateObj
     })
-  }
-
-  const getTasksByCategory = (category) => {
-    return tasks.filter(task => task.category === category)
   }
 
   const formatTime = (dateTimeString) => {
@@ -193,9 +182,6 @@ export default function App() {
                         <div className="task-time">{formatTime(task.reminder)}</div>
                         <div className="task-info">
                           <span className="task-name">{task.text}</span>
-                          <span className={`task-category ${task.category.toLowerCase()}`}>
-                            {task.category}
-                          </span>
                         </div>
                         <input
                           type="checkbox"
@@ -227,113 +213,9 @@ export default function App() {
         </div>
 
         {/* Right Side - Category Buttons */}
-        <div className="category-sidebar">
-          <div className="category-buttons">
-            {categories.map(category => (
-              <button
-                key={category}
-                className={`category-btn ${category.toLowerCase()}`}
-                onClick={() => {
-                  setSelectedCategory(category)
-                  setIsCategoryPanelOpen(true)
-                }}
-              >
-                <span className="category-icon">
-                  {category === 'Personal' && '👤'}
-                  {category === 'Work' && '💼'}
-                  {category === 'Health' && '💪'}
-                  {category === 'Other' && '📋'}
-                </span>
-                <span className="category-name">{category}</span>
-                <span className="task-count">{getTasksByCategory(category).length}</span>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Category Tasks Panel */}
-        {isCategoryPanelOpen && (
-          <div className="category-panel-overlay" onClick={() => setIsCategoryPanelOpen(false)}>
-            <div className="category-panel" onClick={(e) => e.stopPropagation()}>
-              <div className="panel-header">
-                <h3>{selectedCategory} Tasks</h3>
-                <button 
-                  className="close-btn"
-                  onClick={() => setIsCategoryPanelOpen(false)}
-                >
-                  ×
-                </button>
-              </div>
-              
-              <div className="panel-content">
-                <div className="task-list">
-                  {getTasksByCategory(selectedCategory).length === 0 ? (
-                    <div className="no-tasks">
-                      <p>No {selectedCategory.toLowerCase()} tasks yet</p>
-                    </div>
-                  ) : (
-                    getTasksByCategory(selectedCategory).map(task => (
-                      <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
-                        {editingTask && editingTask.id === task.id ? (
-                          <div className="edit-form">
-                            <input
-                              type="text"
-                              value={editingTask.text}
-                              onChange={(e) => setEditingTask({...editingTask, text: e.target.value})}
-                              className="edit-input"
-                            />
-                            <select
-                              value={editingTask.category}
-                              onChange={(e) => setEditingTask({...editingTask, category: e.target.value})}
-                              className="edit-category"
-                            >
-                              {categories.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                              ))}
-                            </select>
-                            <input
-                              type="datetime-local"
-                              value={editingTask.reminder || ''}
-                              onChange={(e) => setEditingTask({...editingTask, reminder: e.target.value})}
-                              className="edit-reminder"
-                            />
-                            <div className="edit-actions">
-                              <button onClick={saveEdit} className="save-btn">Save</button>
-                              <button onClick={cancelEdit} className="cancel-btn">Cancel</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="task-content">
-                            <input
-                              type="checkbox"
-                              checked={task.completed}
-                              onChange={() => toggleTask(task.id)}
-                              className="task-checkbox"
-                            />
-                            <div className="task-details">
-                              <span className="task-text">{task.text}</span>
-                              <div className="task-meta">
-                                {task.reminder && (
-                                  <span className="reminder-info">
-                                    🔔 {formatDateTime(task.reminder)}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="task-actions">
-                              <button onClick={() => startEditing(task)} className="edit-btn">Edit</button>
-                              <button onClick={() => deleteTask(task.id)} className="delete-btn">Delete</button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
 
       {/* Add Task Modal */}
@@ -358,17 +240,7 @@ export default function App() {
                 className="task-input"
                 onKeyPress={(e) => e.key === 'Enter' && addTask()}
               />
-              
-              <select
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                className="category-select"
-              >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              
+
               <input
                 type="datetime-local"
                 value={newReminder}
@@ -376,7 +248,7 @@ export default function App() {
                 className="reminder-input"
                 placeholder="Set reminder"
               />
-              
+
               <select
                 value={newReminderType}
                 onChange={(e) => setNewReminderType(e.target.value)}
@@ -385,7 +257,7 @@ export default function App() {
                 <option value="once">Once</option>
                 <option value="daily">Daily</option>
               </select>
-              
+
               <div className="modal-actions">
                 <button onClick={addTask} className="add-btn">Add Task</button>
                 <button onClick={() => setIsAddTaskModalOpen(false)} className="cancel-btn">Cancel</button>
