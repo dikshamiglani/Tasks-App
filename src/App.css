@@ -88,7 +88,8 @@ body {
 .header-controls {
   display: flex;
   align-items: center;
-  gap: 15px;
+  flex: 1;
+  margin-right: 60px;
 }
 
 .date-input-header {
@@ -100,7 +101,14 @@ body {
   font-size: 14px;
   outline: none;
   transition: all 0.3s ease;
-  min-width: 150px;
+  width: 100%;
+  max-width: 200px;
+}
+
+.tasks-icon-fixed {
+  position: absolute;
+  right: 25px;
+  top: 25px;
 }
 
 .tab-container {

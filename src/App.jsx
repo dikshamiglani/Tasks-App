@@ -177,15 +177,17 @@ export default function App() {
                   className="date-input-header"
                 />
               )}
-              <button 
-                className="tasks-icon-btn"
-                onClick={() => setIsTasksPanelOpen(true)}
-                title="View All Tasks"
-              >
-                📋
-              </button>
             </div>
           </div>
+          
+          <button 
+            className="tasks-icon-btn tasks-icon-fixed"
+            onClick={() => setIsTasksPanelOpen(true)}
+            title="View All Tasks"
+          >
+            📋
+          </button>
+        </div>
 
           <div className="tab-content">
             {activeTab === 'schedule' && (
