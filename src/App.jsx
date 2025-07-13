@@ -291,7 +291,6 @@ export default function App() {
             </div>
           </div>
         )}
-
       </div>
 
       {/* Add Task Modal */}
